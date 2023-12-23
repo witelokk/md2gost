@@ -124,8 +124,8 @@ class DocxRenderer(Renderer):
 
         height = space_before + lines * style.font.line_height * style.line_spacing + style.space_after
         fitting_lines = 0
-        for lines in range(1, lines + 1):
-            if (style.space_before + ((lines - 1) * style.line_spacing + 1) * style.font.line_height
+        for lines_ in range(1, lines + 1):
+            if (style.space_before + ((lines_ - 1) * style.line_spacing + 1) * style.font.line_height
                     > self._layout_state.remaining_page_height):
                 break
             fitting_lines += 1
@@ -134,7 +134,7 @@ class DocxRenderer(Renderer):
             # the whole paragraph fits page
             height = min(height, self._layout_state.remaining_page_height)
         elif fitting_lines <= 1 or (lines - fitting_lines == 1 and lines == 3):
-            # if only no or only one line fits the page, paragraph goes to the next page
+            # if no or only one line fits the page, paragraph goes to the next page
             height += self._layout_state.remaining_page_height
         elif lines - fitting_lines == 1:
             # if all lines except last fit the page, the last two lines go to the new page
@@ -143,7 +143,7 @@ class DocxRenderer(Renderer):
                       + style.space_after)
         else:
             height = (self._layout_state.remaining_page_height +
-                      style.space_before + style.font.line_height *
+                      style.space_before + style.font.line_height * style.line_spacing *
                       (lines - fitting_lines) + style.space_after)
 
         return Length(height)
@@ -441,7 +441,7 @@ class DocxRenderer(Renderer):
         yield docx_paragraph, self._calculate_paragraph_height(line_breaker, paragraph.runs, normal_style)
 
     @_render_element.register
-    def render_listing(self, listing: elements.Listing):
+    def _render_listing(self, listing: elements.Listing):
         caption_paragraph, caption_height = \
             self._render_numbered_caption(listing.caption.id, "Листинг", listing.caption.runs)
 
