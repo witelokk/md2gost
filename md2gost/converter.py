@@ -1,79 +1,39 @@
-import logging
 import os.path
 import sys
+from typing import Collection
 
-import docx
-from docx.document import Document
-from docx.shared import Cm
+from docx import Document
 
-from .debugger import Debugger
-from .layout_tracker import LayoutTracker
-from md2gost.processors.numbering_preprocessor import NumberingPreProcessor
-from .parser import ParserFactory
-from .renderable import Renderable
-from .document_merger import DocumentMerger
-from md2gost.processors.toc.toc_processor import TocPreProcessor, TocPostProcessor
-from md2gost.processors.renderer import Renderer
-
-BOTTOM_MARGIN = Cm(1.86)
+from .parser import create_parser_by_extension
+from .renderer import create_renderer_by_extension
+from .renderer.redering_settings import RenderingSettings
 
 
 class Converter:
-    """Converts markdown file to docx file"""
+    def __init__(self, template_path: str, title_path: str | None, first_page: int, debug: bool, syntax_highlighting: bool):
+        self._template = Document(template_path)
+        self._rendering_settings = RenderingSettings(
+            debug=debug, syntax_highlighting=syntax_highlighting, title=title_path, first_page=first_page)
 
-    def __init__(self, input_paths: list[str], output_path: str,
-                 template_path: str = None, title_path: str | None = None, title_pages: int = 1, debug: bool = False):
-        self._output_path = output_path
-        self._document: Document = docx.Document(template_path)
-        self._pages_offset = 0
-        self._document._body.clear_content()
-        self._debugger = Debugger(self._document) if debug else None
-        self._renderables: list[Renderable] = []
-        parser_factory = ParserFactory()
-        for path in input_paths:
-            try:
-                with open(path, encoding="utf-8") as f:
-                    text = f.read()
-            except FileNotFoundError:
-                print(f"Файл {path} не найден!")
-                exit(-3)
+    def convert(self, input_paths: Collection[str], output_path: str):
+        output_extension = output_path.split(".")[-1]
 
-            extension = path.split(".")[-1]
-            parser = parser_factory.create_by_extension(
-                extension, self._document)
+        elements = []
+        for input_path in input_paths:
+            extension = input_path.split(".")[-1]
+            parser = create_parser_by_extension(extension)
+
             if not parser:
-                logging.critical(f"Формат входных файлов {extension} не поддерживается")
-                sys.exit(-1)
+                print(f"Формат {extension} не поддерживается!", file=sys.stderr)
+                sys.exit(1)
 
-            self._renderables += \
-                list(parser.parse(text, os.path.dirname(os.path.abspath(path))))
+            with open(input_path, "r", encoding="utf-8") as f:
+                elements += parser.parse(f.read(), os.path.dirname(input_path))
 
-        max_height = self._document.sections[-1].page_height - self._document.sections[0] \
-            .top_margin - BOTTOM_MARGIN  # - ((136 / 2) * (Pt(1)*72/96))  # todo add bottom margin detection with footer
-        max_width = self._document.sections[-1].page_width - self._document.sections[-1].left_margin \
-            - self._document.sections[-1].right_margin
+        renderer = create_renderer_by_extension(output_extension, elements, self._rendering_settings, self._template)
+        if not renderer:
+            print(f"Формат {output_extension} не поддерживается!", file=sys.stderr)
+            sys.exit(1)
 
-        self._layout_tracker = LayoutTracker(max_height, max_width)
-
-        if title_path:
-            title_document: Document = docx.Document(title_path)
-            self._pages_offset = title_pages
-            merger = DocumentMerger(self._document)
-            merger.append(title_document, title_pages)
-            for _ in range(title_pages-1):
-                self._layout_tracker.new_page()
-
-    def convert(self):
-        processors = [
-            TocPreProcessor(),
-            NumberingPreProcessor(),
-            Renderer(self._document, self._layout_tracker, self._debugger),
-            TocPostProcessor(self._pages_offset),
-        ]
-
-        for processor in processors:
-            processor.process(self._renderables)
-
-    @property
-    def document(self) -> Document:
-        return self._document
+        renderer.render()
+        renderer.save(output_path)

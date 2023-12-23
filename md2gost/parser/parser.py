@@ -1,11 +1,14 @@
 from abc import ABC, abstractmethod
-from typing import Generator
 
-from md2gost.renderable import Renderable
+from ..elements import Element
 
 
-class Parser:
+class Parser(ABC):
     @abstractmethod
-    def parse(self, text: str, relative_dir_path: str)\
-            -> Generator[Renderable, None, None]:
-        """Parses provided text"""
+    def parse(self, text: str, source_dir: str) -> list[Element]:
+        """
+        Parses given text
+        :param text: source text
+        :param source_dir: directory of source file (used to resolve relative paths)
+        :returns: parsed elements
+        """

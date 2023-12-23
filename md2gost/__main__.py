@@ -1,63 +1,51 @@
 #!/bin/python
-from argparse import ArgumentParser, BooleanOptionalAction
+import click
 import os.path
 import sys
-from getpass import getuser
 
-from md2gost.parser import ParserFactory
-from .converter import Converter
+from . import __version__
 
 
-def main():
-    parser = ArgumentParser(
-        prog="md2gost",
-        description="Этот скрипт предназначен для генерирования отчетов/\
-                курсовых работ по ГОСТ в формате docx из Markdown-файла."
-    )
-    parser.add_argument("filenames", nargs="*",
-                        help="Путь до исходного(-ых) markdown файла(-ов)")
-    parser.add_argument("-o", "--output", help="Путь до сгенерированного \
-                            файла")
-    parser.add_argument("-t", "--template", help="Путь до шаблона .docx")
-    parser.add_argument("-T", "--title", help="Путь до файла титульной(-ых) \
-                            страниц(ы) в формете docx")
-    parser.add_argument("--title-pages", help="Количество страниц в файле титульной(-ых) \
-                            страниц(ы) в формете docx", default=1, type=int)
-    parser.add_argument("--syntax-highlighting", help="Подсветка синтаксиса в листингах",
-                        action=BooleanOptionalAction)
-    parser.add_argument("--debug", help="Добавляет отладочные данные в документ",
-                        action="store_true")
+class DeprecatedOption(click.Option):
+    def __init__(self, *args, **kwargs):
+        self.deprecated = kwargs.pop('deprecated', ())
+        self.preferred = kwargs.pop('preferred', args[0][-1])
+        super(DeprecatedOption, self).__init__(*args, **kwargs)
 
-    args = parser.parse_args()
-    filenames, output, template, title, title_pages, debug = \
-        args.filenames, args.output, args.template, args.title, args.title_pages, args.debug
-    if args.syntax_highlighting:
-        os.environ["SYNTAX_HIGHLIGHTING"] = "1"
+
+@click.command
+@click.argument("filenames", nargs=-1)
+@click.option("-o", "--output", help="Путь до сгенерированного файла")
+@click.option("-t", "--template", help="Путь до шаблона в формате docx")
+@click.option("-T", "--title", help="Путь до титульника в формате docx")
+@click.option("-f", "--first-page", help="Номер первой страницы", default=1)
+@click.option("-s", "--syntax-highlighting", help="Подсветка синтаксиса в листингах", is_flag=True)
+@click.option("--title-pages", hidden=True)
+@click.option("-d", "--debug", is_flag=True, hidden=True)
+@click.version_option(__version__, "--version", "-v")
+@click.help_option("-h", "--help")
+def main(filenames: tuple[str, ...], output: str, template: str, title: str, first_page: int,
+         syntax_highlighting: bool, debug: bool, title_pages: str):
+    # deprecated options
+    if title_pages:
+        print("Параметр --title-pages устарел. Используйте --first-page.", file=sys.stderr)
+        sys.exit(1)
+
+    from .converter import Converter
 
     if not filenames:
         print("Нет входных файлов!")
         return -1
 
-    if output:
-        if not output.endswith(".docx"):
-            print("Ошибка: выходной файл должен иметь расширение .docx")
-            return -1
-    else:
+    if not output:
         output = os.path.basename(filenames[0]).replace(".md", ".docx")
 
     if not template:
         template = os.path.join(os.path.dirname(__file__), "Template.docx")
 
-    converter = Converter(filenames, output, template, title, title_pages, debug)
-    converter.convert()
+    converter = Converter(template, title, first_page, debug, syntax_highlighting)
+    converter.convert(filenames, output)
 
-    document = converter.document
-
-    document.core_properties.author = getuser()
-    document.core_properties.comments =\
-        "Создано при помощи https://github.com/witelokk/md2gost"
-
-    document.save(output)
     print(f"Сгенерированный документ: {os.path.abspath(output)}")
 
     if debug:
@@ -65,7 +53,7 @@ def main():
         if platform.system() == 'Darwin':       # macOS
             import subprocess
             subprocess.call(('open', output))
-        elif platform.system() == 'Windows':    # Windows
+        elif platform.system() == 'Windows':    # windows
             os.startfile(output)
         else:                                   # linux variants
             import subprocess
