@@ -19,7 +19,7 @@ from docx.document import Document
 
 from md2gost.renderer.renderer import Renderer
 from .docx_appender import DocxAppender
-from ..common.font_utils import Font
+from ..common.font import Font
 from ..common.level_numbering import LevelNumbering
 from ..redering_settings import RenderingSettings
 from ..common.inherited_paragraph_style import InheritedParagraphStyle
@@ -240,7 +240,7 @@ class DocxRenderer(Renderer):
             docx_image.height = Length(height)
 
         caption_paragraph, caption_height = self._render_numbered_caption(
-            image.caption.id, "Рисунок", image.caption.runs, True)
+            image.caption.id, "Рисунок", image.caption.runs, True, False)
 
         # limit width by max width
         if docx_image.width > self._layout_state.max_width:
@@ -264,7 +264,8 @@ class DocxRenderer(Renderer):
         yield paragraph, height
         yield caption_paragraph, caption_height
 
-    def _render_numbered_caption(self, reference: str, category: str, runs: list[elements.Run], center: bool = False) \
+    def _render_numbered_caption(self, reference: str, category: str, runs: list[elements.Run], center: bool = False,
+                                 before=True) \
             -> tuple[Paragraph, Length]:
         paragraph = Paragraph(create_oxml_element("w:p"), self._document._body)
 
@@ -309,7 +310,8 @@ class DocxRenderer(Renderer):
 
         return paragraph, height
 
-    def _render_caption(self, text: str, center: bool = False, page_break_before=False) -> tuple[Paragraph, Length]:
+    def _render_caption(self, text: str, center: bool = False, page_break_before=False, before=True)\
+            -> tuple[Paragraph, Length]:
         paragraph = Paragraph(create_oxml_element("w:p"), self._document._body)
 
         paragraph.add_run(text)
@@ -407,7 +409,7 @@ class DocxRenderer(Renderer):
             for i, element in enumerate(item.elements):
                 if isinstance(element, (elements.Paragraph, elements.Heading)):
                     if i == 0:
-                        marker = f"{number}." if list_.ordered else "●"
+                        marker = f"{number}." if list_.ordered else "-"
                         number += 1
                     else:
                         marker = ""

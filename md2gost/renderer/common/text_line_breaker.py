@@ -3,7 +3,7 @@ from uniseg.linebreak import line_break_units
 
 from md2gost.elements.paragraph import Paragraph
 from md2gost.elements.run import Run
-from md2gost.renderer.common.font_utils import Font
+from md2gost.renderer.common.font import Font
 
 
 class TextLineBreaker:
@@ -34,7 +34,8 @@ class TextLineBreaker:
         if not self._font.is_mono:
             # space_width *= 0.8
             # space_width = self._font.get_text_width("a")
-            space_width = Pt(3.45)
+            # space_width = Pt(3.45)
+            space_width = Pt(3.3)
 
         text = "".join([run.text for run in runs])
 
@@ -56,26 +57,31 @@ class TextLineBreaker:
             spaces = len(unit) - len(unit.rstrip())
             new_runs, no_spaces_width = self._get_text_width(runs, pos, pos + len(unit) - spaces)
             full_width = no_spaces_width + spaces * space_width
-            if no_spaces_width <= self._max_width - line_width:
+            max_width = self._max_width
+            if len(lines) == 1:
+                max_width -= self._first_line_indent
+            if no_spaces_width <= max_width - line_width:
                 line_width += full_width
                 lines[-1] += [new_runs]
-            elif no_spaces_width > self._max_width:
+            elif no_spaces_width > max_width:
                 if lines[-1] == "":
                     lines.pop(-1)
                 i = 0
                 for j in range(len(unit) + 1):
                     new_runs, part_width = self._get_text_width(runs, pos + i, pos + j)
-                    if not self._font.is_mono:
-                        part_width *= 1.001  # word compresses characters
-                        # to fit one more character into the line
-                    if part_width > (self._max_width if len(lines) != 0 else self._max_width -
-                                     (self._first_line_indent or 0)):
-                        lines.append(unit[i:j - 1])
-                        raise NotImplementedError()  # /\
+                    # if not self._font.is_mono:
+                    #     part_width *= 1.001  # word compresses characters
+                    #     # to fit one more character into the line
+                    if part_width > max_width:
+                        # lines.append(unit[i:j - 1])
+                        lines.append([new_runs])
+                        # raise NotImplementedError()  # /\
                         i = j - 1
-                lines.append(unit[i:])
-                raise NotImplementedError()  # /\
-                line_width = self._font._get_text_width(unit[i:])
+                pass
+                new_runs, part_width = self._get_text_width(runs, pos + i, pos + j)
+                lines.append([new_runs])
+                # raise NotImplementedError()  # /\
+                line_width = part_width
             else:
                 lines.append([new_runs])
                 line_width = full_width

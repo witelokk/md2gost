@@ -5,7 +5,7 @@ from docx.oxml import OxmlElement
 from docx.shared import Length
 from docx.styles.style import _ParagraphStyle
 
-from md2gost.renderer.common.font_utils import Font
+from md2gost.renderer.common.font import Font
 
 
 @cache

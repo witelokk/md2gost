@@ -13,7 +13,7 @@ class Run:
 
     @property
     def text(self):
-        return self._text.replace("\t", "    ") if self._text else ""
+        return self._text.replace("\t", "    ").replace(" -- ", " — ") if self._text else ""
 
     @text.setter
     def text(self, value):

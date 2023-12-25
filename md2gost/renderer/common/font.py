@@ -79,8 +79,8 @@ class Font:
 
     def get_text_width(self, text: str) -> Length:
         # if not self._is_mono:
-        bbox = self._draw.textbbox((0, 0), text, self._freetypefont)
-        return Pt(bbox[2] - bbox[0])
+        bbox = self._draw.textbbox((0, 0), text, self._freetypefont, features=['kern'])
+        return Pt(bbox[2] - bbox[0])# * 1.01
         # else:
         #     return Pt(len(text) * self._face.glyph.advance.x / 64)
 
@@ -91,7 +91,6 @@ class Font:
             return Pt(13.62)
 
         return Pt(self._face.size.height / 64 + 0.1)
-
 
     @classmethod
     @cache
