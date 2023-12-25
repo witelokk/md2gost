@@ -20,7 +20,7 @@ Markdown-файл: [example.md](https://github.com/witelokk/md2gost/blob/main/ex
 pip install --upgrade git+https://github.com/witelokk/md2gost.git@main
 ```
 
-<details open>
+<details>
 <summary>PEP 668</summary>
 
 Если ваша система приняла стандарт [PEP 668](https://peps.python.org/pep-0668/), используйте [pipx](https://pypa.github.io/pipx/):
@@ -62,12 +62,18 @@ pipx upgrade md2gost
 Чтобы изменить номер первой страницы, используйте параметр `--first-page` (например `--first-page 3`).
 
 ### Подписи рисунков, листингов, таблиц
-Рисунки:
+<details>
+<summary>Рисунки</summary>
+
 ```markdown
 ![](path/to/image "Caption text")
 ```
 
-Таблицы:
+</details>
+
+<details>
+<summary>Таблицы</summary>
+
 ```markdown
 % Caption text
 
@@ -76,7 +82,11 @@ pipx upgrade md2gost
 | a | b | c |
 ```
 
-Листинги:
+</details>
+
+<details>
+<summary>Листинги</summary>
+
 ~~~markdown
 % Caption text
 
@@ -85,7 +95,11 @@ print("hello world")
 ```
 ~~~
 
-Формулы:
+</details>
+
+<details>
+<summary>Формулы</summary>
+
 ```markdown
 %uniquename
 
@@ -93,6 +107,8 @@ $$
 2 + 2 = 4
 $$
 ```
+
+</details>
 
 ### Ссылки (кросс-референсинг)
 Чтобы вставить кликабельный номер картинки/листинга/etc, используйте
@@ -108,14 +124,24 @@ print("hello world")
 Рис. @pic, листинг @code.
 ~~~
 
-Результат:
-![](./images/crossreferencing.png)
-
 ### Заголовки для основных разделов
-Для того чтобы у заголовка не было сквозной нумерации (например для заголовка Содержание), используйте 
-```markdown
-# *СОДЕРЖАНИЕ
-```
+Для заголовков основных разделов (таких, как `СОДЕРЖАНИЕ`, `ВВЕДЕНИЕ` и т.д.) автоматически отключена нумерация и 
+включено выравнивание по центру.
+
+<details>
+<summary>Полный список таких заголовков</summary>
+
+- СПИСОК ИСПОЛНИТЕЛЕЙ
+- РЕФЕРАТ
+- СОДЕРЖАНИЕ
+- ТЕРМИНЫ И ОПРЕДЕЛЕНИЯ
+- ПЕРЕЧЕНЬ СОКРАЩЕНИЙ И ОБОЗНАЧЕНИЙ
+- ВВЕДЕНИЕ
+- ЗАКЛЮЧЕНИЕ
+- СПИСОК ИСПОЛЬЗОВАННЫХ ИСТОЧНИКОВ
+- ПРИЛОЖЕНИЕ ...
+
+</details>
 
 ### Генерация содержания
 ```markdown
